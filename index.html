@@ -1,29 +1,64 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Slime Math Easy</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #f1f8e9; font-family: 'Arial', sans-serif; touch-action: none; }
-        #ad-top, #ad-bottom { position: fixed; left: 0; width: 100%; height: 110px; background: #333; z-index: 100; display: flex; align-items: center; justify-content: center; }
-        #ad-top { top: 0; } #ad-bottom { bottom: 0; }
-        iframe { border: none; width: 100%; height: 110px; }
-        #game-container { margin-top: 110px; height: calc(100vh - 220px); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        body { 
+            margin: 0; height: 100vh; display: flex; flex-direction: column; 
+            background: #f1f8e9; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; 
+        }
+        
+        /* 上下の広告枠 */
+        #ad-top, #ad-bottom { 
+            width: 100%; height: 110px; background: #333; 
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 100;
+        }
+        iframe { border: none; width: 100%; height: 100%; }
+
+        /* ゲームエリア */
+        #game-area { 
+            flex-grow: 1; position: relative; width: 100%; background: #dcedc8; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        #score-ui { position: absolute; top: 10px; right: 20px; font-size: 20px; font-weight: bold; color: #388e3c; }
         #question { font-size: 48px; font-weight: bold; color: #388e3c; margin-bottom: 20px; }
         #timer-bar { width: 80%; height: 10px; background: #c8e6c9; border-radius: 5px; margin-bottom: 30px; overflow: hidden; }
-        #timer-fill { width: 100%; height: 100%; background: #4caf50; transition: width 0.1s linear; }
+        #timer-fill { width: 100%; height: 100%; background: #4caf50; }
         #choices { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 90%; max-width: 400px; }
-        .choice-btn { padding: 20px; font-size: 24px; background: #ffffff; border: 3px solid #388e3c; border-radius: 15px; color: #388e3c; font-weight: bold; cursor: pointer; text-align: center; }
+        .choice-btn { padding: 20px; font-size: 24px; background: #ffffff; border: 3px solid #388e3c; border-radius: 15px; color: #388e3c; font-weight: bold; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
         .choice-btn:active { background: #388e3c; color: white; }
-        #score-ui { position: absolute; top: 10px; right: 20px; font-size: 20px; font-weight: bold; color: #388e3c; }
-        #startScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
-        #goButton { padding: 15px 40px; font-size: 24px; background: #4caf50; border: none; border-radius: 50px; color: white; font-weight: bold; }
+
+        /* メニュー（ゲームオーバー）画面 */
+        #menuScreen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255,255,255,0.95); display: flex; flex-direction: column; 
+            align-items: center; justify-content: space-between; z-index: 200; padding: 10px 0; box-sizing: border-box;
+        }
+
+        /* 中央広告コンテナ */
+        #ad-middle-container { 
+            width: 300px; height: 250px; background: #ddd;
+            display: none; justify-content: center; align-items: center; 
+            overflow: hidden; flex-shrink: 0; border: 1px solid #ccc;
+        }
+        
+        .btn-group { 
+            display: flex; flex-direction: column; align-items: center; gap: 8px; 
+            width: 100%; padding-bottom: 5px;
+        }
+        .menu-btn { padding: 12px 30px; font-size: 17px; border: none; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; text-decoration: none; width: 220px; text-align: center; }
+        #goButton { background: #4caf50; box-shadow: 0 4px #388e3c; }
+        .link-btn { background: #ff4081; box-shadow: 0 4px #c2185b; }
+        .best-info { color: #388e3c; font-size: 18px; font-weight: bold; margin: 2px 0; }
     </style>
 </head>
 <body>
     <div id="ad-top"><iframe src="ad.html" id="frame-top"></iframe></div>
-    <div id="ad-bottom"><iframe src="ad.html" id="frame-bottom"></iframe></div>
-    <div id="game-container">
+
+    <div id="game-area">
         <div id="score-ui">SCORE: 0</div>
         <div id="question">? + ?</div>
         <div id="timer-bar"><div id="timer-fill"></div></div>
@@ -33,38 +68,139 @@
             <div class="choice-btn" onclick="checkAnswer(this)">0</div>
             <div class="choice-btn" onclick="checkAnswer(this)">0</div>
         </div>
-        <div id="startScreen">
-            <h1 style="color:#388e3c;">SLIME MATH 初級</h1>
-            <p>10秒以内に答えを選んでね！🌿</p>
-            <button id="goButton">START</button>
+
+        <div id="menuScreen">
+            <div style="text-align:center;">
+                <h1 id="menuTitle" style="color:#388e3c; margin:0; font-size: 24px;">SLIME MATH</h1>
+                <p id="menuMsg" style="margin:2px 0; font-size:14px;">10秒以内に答えを選ぼう！🌿</p>
+                <div class="best-info">BEST SCORE: <span id="best-ui">0</span></div>
+            </div>
+
+            <div id="ad-middle-container">
+                <script src="https://adm.shinobi.jp/s/1e6de436ea850948e238e975a93767eb"></script>
+            </div>
+
+            <div class="btn-group" id="btnGroup">
+                <button id="goButton" class="menu-btn">GAME START</button>
+                <a href="https://saaaachi.github.io/Slime-drop/" class="menu-btn link-btn">他のゲームはこちら</a>
+            </div>
         </div>
     </div>
+
+    <div id="ad-bottom"><iframe src="ad.html" id="frame-bottom"></iframe></div>
+
     <script>
         let score = 0, correctAnswer = 0, timeLeft = 100, timerInterval, gameActive = false;
-        const questionEl = document.getElementById('question'), scoreEl = document.getElementById('score-ui'), timerFill = document.getElementById('timer-fill'), startScreen = document.getElementById('startScreen'), choiceBtns = document.querySelectorAll('.choice-btn');
-        document.getElementById('goButton').onclick = () => { startScreen.style.display = 'none'; gameActive = true; score = 0; nextQuestion(); };
+        let bestScore = localStorage.getItem("slime_math_best") || 0;
+
+        const questionEl = document.getElementById('question'),
+              scoreEl = document.getElementById('score-ui'),
+              timerFill = document.getElementById('timer-fill'),
+              menuScreen = document.getElementById('menuScreen'),
+              menuTitle = document.getElementById('menuTitle'),
+              menuMsg = document.getElementById('menuMsg'),
+              bestUi = document.getElementById('best-ui'),
+              goButton = document.getElementById('goButton'),
+              adMid = document.getElementById('ad-middle-container'),
+              btnGroup = document.getElementById('btnGroup'),
+              choiceBtns = document.querySelectorAll('.choice-btn');
+
+        window.onload = () => { bestUi.innerText = bestScore; adMid.style.display = "none"; };
+
+        goButton.onclick = () => {
+            menuScreen.style.display = 'none';
+            adMid.style.display = 'none';
+            gameActive = true;
+            score = 0;
+            nextQuestion();
+        };
+
         function nextQuestion() {
             if(!gameActive) return;
             scoreEl.innerText = `SCORE: ${score}`;
             let maxNum = 10 + Math.floor(score / 5) * 3;
-            let a = Math.floor(Math.random() * maxNum) + 1, b = Math.floor(Math.random() * maxNum) + 1;
+            let a = Math.floor(Math.random() * maxNum) + 1;
+            let b = Math.floor(Math.random() * maxNum) + 1;
+            
             let isSub = Math.random() > 0.5;
-            if (isSub) { if (a < b) [a, b] = [b, a]; questionEl.innerText = `${a} - ${b}`; correctAnswer = a - b; }
-            else { questionEl.innerText = `${a} + ${b}`; correctAnswer = a + b; }
+            if (isSub) {
+                if (a < b) [a, b] = [b, a];
+                questionEl.innerText = `${a} - ${b}`;
+                correctAnswer = a - b;
+            } else {
+                questionEl.innerText = `${a} + ${b}`;
+                correctAnswer = a + b;
+            }
+
             let answers = [correctAnswer];
-            while(answers.length < 4) { let wrong = correctAnswer + (Math.floor(Math.random() * 6) - 3); if (wrong >= 0 && !answers.includes(wrong)) answers.push(wrong); }
+            while(answers.length < 4) {
+                let diff = Math.floor(Math.random() * 11) - 5; // -5〜+5の範囲でずらす
+                let wrong = correctAnswer + diff;
+                if (wrong >= 0 && !answers.includes(wrong) && diff !== 0) {
+                    answers.push(wrong);
+                }
+            }
             answers.sort(() => Math.random() - 0.5);
             choiceBtns.forEach((btn, i) => { btn.innerText = answers[i]; });
-            clearInterval(timerInterval); timeLeft = 100;
+
+            clearInterval(timerInterval);
+            timeLeft = 100;
             timerInterval = setInterval(() => {
-                timeLeft -= 1; // 10秒
+                timeLeft -= 1;
                 timerFill.style.width = timeLeft + "%";
-                if (timeLeft <= 0) { clearInterval(timerInterval); gameOver("TIME UP!"); }
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver("TIME UP!");
+                }
             }, 100);
         }
-        function checkAnswer(btn) { if(!gameActive) return; if (parseInt(btn.innerText) === correctAnswer) { score++; nextQuestion(); } else { gameOver("WRONG!"); } }
-        function gameOver(msg) { gameActive = false; clearInterval(timerInterval); alert(`${msg}\nSCORE: ${score}`); location.reload(); }
-        setInterval(() => { ["frame-top", "frame-bottom"].forEach(id => { const f = document.getElementById(id); const s = f.src; f.src = "about:blank"; setTimeout(() => f.src = s, 100); }); }, 30000);
+
+        function checkAnswer(btn) {
+            if(!gameActive) return;
+            if (parseInt(btn.innerText) === correctAnswer) {
+                score++;
+                nextQuestion();
+            } else {
+                gameOver("WRONG!");
+            }
+        }
+
+        function gameOver(msg) {
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            if(score > bestScore) {
+                bestScore = score;
+                localStorage.setItem("slime_math_best", bestScore);
+                bestUi.innerText = bestScore;
+            }
+
+            menuTitle.innerText = msg;
+            menuTitle.style.color = "#f44336";
+            menuMsg.innerText = "SCORE: " + score;
+            goButton.innerText = "RETRY";
+
+            btnGroup.style.opacity = "0";
+            btnGroup.style.pointerEvents = "none";
+            adMid.style.display = "flex"; 
+            menuScreen.style.display = "flex";
+
+            // 誤タップ防止：0.6秒後にボタンを有効化
+            setTimeout(() => {
+                btnGroup.style.opacity = "1";
+                btnGroup.style.pointerEvents = "auto";
+            }, 600);
+        }
+
+        // 30秒ごとに上下の広告をリフレッシュ
+        setInterval(() => {
+            ["frame-top", "frame-bottom"].forEach(id => {
+                const f = document.getElementById(id);
+                if(f){
+                    const s = f.src; f.src = "about:blank"; setTimeout(() => f.src = s, 100);
+                }
+            });
+        }, 30000);
     </script>
 </body>
 </html>
